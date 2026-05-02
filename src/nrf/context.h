@@ -37,6 +37,11 @@ extern int __nrf_log_domain;
 
 typedef struct nrf_context_s {
     ogs_list_t assoc_list;
+
+    struct {
+        int num_of_trusted_amf_id;
+        char *trusted_amf_id[OGS_MAX_NUM_OF_HOSTNAME];
+    } auth;
 } nrf_context_t;
 
 typedef struct nrf_assoc_s nrf_assoc_t;

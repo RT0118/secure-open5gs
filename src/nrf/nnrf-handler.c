@@ -24,6 +24,8 @@ static int discover_handler(
         int status, ogs_sbi_response_t *response, void *data);
 static void handle_nf_discover_search_result(
         OpenAPI_search_result_t *SearchResult);
+static bool nrf_auth_is_trusted_amf(
+        const char *nf_instance_id);
 
 /**
  * Handles NF registration in NRF. Validates the PLMN-ID against configured
@@ -84,6 +86,23 @@ bool nrf_nnrf_handle_nf_register(ogs_sbi_nf_instance_t *nf_instance,
                 stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
                 recvmsg, "No NFProfile.NFStatus", NULL, NULL));
         return false;
+    }
+
+    if (NFProfile->nf_type == OpenAPI_nf_type_AMF &&
+            nrf_self()->auth.num_of_trusted_amf_id > 0) {
+        if (!nrf_auth_is_trusted_amf(NFProfile->nf_instance_id)) {
+            ogs_error("Untrusted AMF registration rejected [nf_instance_id:%s]",
+                    NFProfile->nf_instance_id);
+            ogs_assert(true ==
+                ogs_sbi_server_send_error(
+                    stream, OGS_SBI_HTTP_STATUS_UNAUTHORIZED,
+                    recvmsg, "AMF nf_instance_id is not trusted",
+                    NULL, NULL));
+            return false;
+        }
+
+        ogs_info("AMF registration authorized [nf_instance_id:%s]",
+                NFProfile->nf_instance_id);
     }
 
     /* Validate the PLMN-ID against configured serving PLMN-IDs */
@@ -259,6 +278,20 @@ bool nrf_nnrf_handle_nf_register(ogs_sbi_nf_instance_t *nf_instance,
     ogs_assert(true == ogs_sbi_server_send_response(stream, response));
 
     return true;
+}
+
+static bool nrf_auth_is_trusted_amf(
+        const char *nf_instance_id)
+{
+    int i;
+    if (!nf_instance_id)
+        return false;
+
+    for (i = 0; i < nrf_self()->auth.num_of_trusted_amf_id; i++) {
+        if (!strcmp(nf_instance_id, nrf_self()->auth.trusted_amf_id[i]))
+            return true;
+    }
+    return false;
 }
 
 bool nrf_nnrf_handle_nf_update(ogs_sbi_nf_instance_t *nf_instance,
