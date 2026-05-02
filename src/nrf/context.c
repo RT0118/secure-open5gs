@@ -166,33 +166,33 @@ int nrf_context_parse_config(void)
                     }
                 }
             } else if (!strcmp(root_key, "security")) {
-            ogs_yaml_iter_t security_iter;
-            ogs_yaml_iter_recurse(&root_iter, &security_iter);
+                ogs_yaml_iter_t security_iter;
+                ogs_yaml_iter_recurse(&root_iter, &security_iter);
 
-            while (ogs_yaml_iter_next(&security_iter)) {
-                const char *security_key = ogs_yaml_iter_key(&security_iter);
-                ogs_assert(security_key);
+                while (ogs_yaml_iter_next(&security_iter)) {
+                    const char *security_key = ogs_yaml_iter_key(&security_iter);
+                    ogs_assert(security_key);
 
-                if (!strcmp(security_key, "trusted_amf_nf_instance_id")) {
-                    ogs_yaml_iter_t trusted_iter;
-                    ogs_yaml_iter_recurse(&security_iter, &trusted_iter);
+                    if (!strcmp(security_key, "trusted_amf_nf_instance_id")) {
+                        ogs_yaml_iter_t trusted_iter;
+                        ogs_yaml_iter_recurse(&security_iter, &trusted_iter);
 
-                    while (ogs_yaml_iter_next(&trusted_iter)) {
-                        const char *v = ogs_yaml_iter_value(&trusted_iter);
-                        if (!v)
-                            continue;
-                        if (self.auth.num_of_trusted_amf_id >=
-                                OGS_ARRAY_SIZE(self.auth.trusted_amf_id)) {
-                            ogs_error("Maximum trusted_amf_nf_instance_id reached");
-                            break;
+                        while (ogs_yaml_iter_next(&trusted_iter)) {
+                            const char *v = ogs_yaml_iter_value(&trusted_iter);
+                            if (!v)
+                                continue;
+                            if (self.auth.num_of_trusted_amf_id >=
+                                    OGS_ARRAY_SIZE(self.auth.trusted_amf_id)) {
+                                ogs_error("Maximum trusted_amf_nf_instance_id reached");
+                                break;
+                            }
+                            self.auth.trusted_amf_id[
+                                self.auth.num_of_trusted_amf_id++] = ogs_strdup(v);
                         }
-                        self.auth.trusted_amf_id[
-                            self.auth.num_of_trusted_amf_id++] = ogs_strdup(v);
                     }
                 }
             }
         }
-    }
     }
 
     rv = nrf_context_validation();
@@ -241,4 +241,3 @@ void nrf_assoc_remove_all(void)
     ogs_list_for_each_safe(&self.assoc_list, next_assoc, assoc)
         nrf_assoc_remove(assoc);
 }
-
