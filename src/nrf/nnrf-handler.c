@@ -100,6 +100,9 @@ bool nrf_nnrf_handle_nf_register(ogs_sbi_nf_instance_t *nf_instance,
                     NULL, NULL));
             return false;
         }
+
+        ogs_info("AMF registration authorized [nf_instance_id:%s]",
+                NFProfile->nf_instance_id);
     }
 
     /* Validate the PLMN-ID against configured serving PLMN-IDs */
