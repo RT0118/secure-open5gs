@@ -47,6 +47,7 @@ void nrf_context_init(void)
 
 void nrf_context_final(void)
 {
+    int i;
     ogs_sbi_nf_instance_t *nf_instance = NULL, *next_nf_instance = NULL;
 
     ogs_assert(context_initialized == 1);
@@ -58,6 +59,10 @@ void nrf_context_final(void)
         if (OGS_FSM_STATE(&nf_instance->sm))
             nrf_nf_fsm_fini(nf_instance);
     }
+
+    for (i = 0; i < self.auth.num_of_trusted_amf_key_id; i++)
+        ogs_free(self.auth.trusted_amf_key_id[i]);
+    self.auth.num_of_trusted_amf_key_id = 0;
 
     nrf_assoc_remove_all();
 
@@ -122,6 +127,33 @@ int nrf_context_parse_config(void)
                             if (v) ogs_local_conf()->time.nf_instance.
                                     heartbeat_interval = atoi(v);
                         }
+                    }
+                }
+            }
+        } else if (!strcmp(root_key, "security")) {
+            ogs_yaml_iter_t security_iter;
+            ogs_yaml_iter_recurse(&root_iter, &security_iter);
+
+            while (ogs_yaml_iter_next(&security_iter)) {
+                const char *security_key = ogs_yaml_iter_key(&security_iter);
+                ogs_assert(security_key);
+
+                if (!strcmp(security_key, "trusted_amf_key_id")) {
+                    ogs_yaml_iter_t trusted_iter;
+                    ogs_yaml_iter_recurse(&security_iter, &trusted_iter);
+
+                    while (ogs_yaml_iter_next(&trusted_iter)) {
+                        const char *v = ogs_yaml_iter_value(&trusted_iter);
+                        if (!v)
+                            continue;
+                        if (self.auth.num_of_trusted_amf_key_id >=
+                                OGS_ARRAY_SIZE(self.auth.trusted_amf_key_id)) {
+                            ogs_error("Maximum trusted_amf_key_id reached");
+                            break;
+                        }
+                        self.auth.trusted_amf_key_id[
+                            self.auth.num_of_trusted_amf_key_id++] =
+                            ogs_strdup(v);
                     }
                 }
             }
