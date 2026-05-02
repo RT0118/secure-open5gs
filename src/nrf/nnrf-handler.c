@@ -25,7 +25,7 @@ static int discover_handler(
 static void handle_nf_discover_search_result(
         OpenAPI_search_result_t *SearchResult);
 static bool nrf_auth_is_trusted_amf(
-        const char *key_id, const char *nf_instance_id);
+        const char *nf_instance_id);
 
 /**
  * Handles NF registration in NRF. Validates the PLMN-ID against configured
@@ -89,16 +89,15 @@ bool nrf_nnrf_handle_nf_register(ogs_sbi_nf_instance_t *nf_instance,
     }
 
     if (NFProfile->nf_type == OpenAPI_nf_type_AMF &&
-            nrf_self()->auth.num_of_trusted_amf_key_id > 0) {
-        const char *key_id = ogs_sbi_header_get(
-                recvmsg->http.headers, "X-Open5GS-AMF-Key-Id");
-        if (!nrf_auth_is_trusted_amf(key_id, NFProfile->nf_instance_id)) {
+            nrf_self()->auth.num_of_trusted_amf_id > 0) {
+        if (!nrf_auth_is_trusted_amf(NFProfile->nf_instance_id)) {
             ogs_error("Untrusted AMF registration rejected [nf_instance_id:%s]",
                     NFProfile->nf_instance_id);
             ogs_assert(true ==
                 ogs_sbi_server_send_error(
                     stream, OGS_SBI_HTTP_STATUS_UNAUTHORIZED,
-                    recvmsg, "AMF key-id is not trusted", NULL, NULL));
+                    recvmsg, "AMF nf_instance_id is not trusted",
+                    NULL, NULL));
             return false;
         }
     }
@@ -279,20 +278,16 @@ bool nrf_nnrf_handle_nf_register(ogs_sbi_nf_instance_t *nf_instance,
 }
 
 static bool nrf_auth_is_trusted_amf(
-        const char *key_id, const char *nf_instance_id)
+        const char *nf_instance_id)
 {
     int i;
-
-    if (!key_id || !nf_instance_id)
+    if (!nf_instance_id)
         return false;
 
-    for (i = 0; i < nrf_self()->auth.num_of_trusted_amf_key_id; i++) {
-        if (!strcmp(key_id, nrf_self()->auth.trusted_amf_key_id[i]))
+    for (i = 0; i < nrf_self()->auth.num_of_trusted_amf_id; i++) {
+        if (!strcmp(nf_instance_id, nrf_self()->auth.trusted_amf_id[i]))
             return true;
     }
-
-    ogs_warn("Missing trusted AMF key-id [nf_instance_id:%s key_id:%s]",
-            nf_instance_id, key_id);
     return false;
 }
 

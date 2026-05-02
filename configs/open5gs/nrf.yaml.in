@@ -18,7 +18,7 @@ nrf:
       - address: 127.0.0.10
         port: 7777
   security:
-    trusted_amf_key_id:
+    trusted_amf_nf_instance_id:
       - amf-lab-01
       - amf-lab-02
 
