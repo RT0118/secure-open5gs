@@ -106,26 +106,62 @@ int nrf_context_parse_config(void)
     ogs_yaml_iter_init(&root_iter, document);
     while (ogs_yaml_iter_next(&root_iter)) {
         const char *root_key = ogs_yaml_iter_key(&root_iter);
+        ogs_yaml_iter_t nrf_iter;
         ogs_assert(root_key);
-        if (!strcmp(root_key, "time")) {
-            ogs_yaml_iter_t time_iter;
-            ogs_yaml_iter_recurse(&root_iter, &time_iter);
-            while (ogs_yaml_iter_next(&time_iter)) {
-                const char *time_key = ogs_yaml_iter_key(&time_iter);
-                ogs_assert(time_key);
-                if (!strcmp(time_key, "nf_instance")) {
-                    ogs_yaml_iter_t sbi_iter;
-                    ogs_yaml_iter_recurse(&time_iter, &sbi_iter);
 
-                    while (ogs_yaml_iter_next(&sbi_iter)) {
-                        const char *sbi_key =
-                            ogs_yaml_iter_key(&sbi_iter);
-                        ogs_assert(sbi_key);
+        if (strcmp(root_key, "nrf") != 0)
+            continue;
 
-                        if (!strcmp(sbi_key, "heartbeat")) {
-                            const char *v = ogs_yaml_iter_value(&sbi_iter);
-                            if (v) ogs_local_conf()->time.nf_instance.
-                                    heartbeat_interval = atoi(v);
+        ogs_yaml_iter_recurse(&root_iter, &nrf_iter);
+        while (ogs_yaml_iter_next(&nrf_iter)) {
+            const char *nrf_key = ogs_yaml_iter_key(&nrf_iter);
+            ogs_assert(nrf_key);
+
+            if (!strcmp(nrf_key, "time")) {
+                ogs_yaml_iter_t time_iter;
+                ogs_yaml_iter_recurse(&nrf_iter, &time_iter);
+                while (ogs_yaml_iter_next(&time_iter)) {
+                    const char *time_key = ogs_yaml_iter_key(&time_iter);
+                    ogs_assert(time_key);
+                    if (!strcmp(time_key, "nf_instance")) {
+                        ogs_yaml_iter_t sbi_iter;
+                        ogs_yaml_iter_recurse(&time_iter, &sbi_iter);
+
+                        while (ogs_yaml_iter_next(&sbi_iter)) {
+                            const char *sbi_key = ogs_yaml_iter_key(&sbi_iter);
+                            ogs_assert(sbi_key);
+
+                            if (!strcmp(sbi_key, "heartbeat")) {
+                                const char *v = ogs_yaml_iter_value(&sbi_iter);
+                                if (v) ogs_local_conf()->time.nf_instance.
+                                        heartbeat_interval = atoi(v);
+                            }
+                        }
+                    }
+                }
+            } else if (!strcmp(nrf_key, "security")) {
+                ogs_yaml_iter_t security_iter;
+                ogs_yaml_iter_recurse(&nrf_iter, &security_iter);
+
+                while (ogs_yaml_iter_next(&security_iter)) {
+                    const char *security_key = ogs_yaml_iter_key(&security_iter);
+                    ogs_assert(security_key);
+
+                    if (!strcmp(security_key, "trusted_amf_nf_instance_id")) {
+                        ogs_yaml_iter_t trusted_iter;
+                        ogs_yaml_iter_recurse(&security_iter, &trusted_iter);
+
+                        while (ogs_yaml_iter_next(&trusted_iter)) {
+                            const char *v = ogs_yaml_iter_value(&trusted_iter);
+                            if (!v)
+                                continue;
+                            if (self.auth.num_of_trusted_amf_id >=
+                                    OGS_ARRAY_SIZE(self.auth.trusted_amf_id)) {
+                                ogs_error("Maximum trusted_amf_nf_instance_id reached");
+                                break;
+                            }
+                            self.auth.trusted_amf_id[
+                                self.auth.num_of_trusted_amf_id++] = ogs_strdup(v);
                         }
                     }
                 }
@@ -161,6 +197,9 @@ int nrf_context_parse_config(void)
 
     rv = nrf_context_validation();
     if (rv != OGS_OK) return rv;
+
+    ogs_info("NRF trusted AMF whitelist entries loaded: %d",
+            self.auth.num_of_trusted_amf_id);
 
     return OGS_OK;
 }
