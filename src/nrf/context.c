@@ -165,8 +165,7 @@ int nrf_context_parse_config(void)
                         }
                     }
                 }
-            }
-        } else if (!strcmp(root_key, "security")) {
+            } else if (!strcmp(root_key, "security")) {
             ogs_yaml_iter_t security_iter;
             ogs_yaml_iter_recurse(&root_iter, &security_iter);
 
@@ -193,6 +192,7 @@ int nrf_context_parse_config(void)
                 }
             }
         }
+    }
     }
 
     rv = nrf_context_validation();
@@ -241,3 +241,4 @@ void nrf_assoc_remove_all(void)
     ogs_list_for_each_safe(&self.assoc_list, next_assoc, assoc)
         nrf_assoc_remove(assoc);
 }
+
